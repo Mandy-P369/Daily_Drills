@@ -4,25 +4,33 @@ Select * from Drillone;
 
 
 --Creating hierarchy columns 
-With recursive hier as
+WITH RECURSIVE hier AS
 (
-Select employee_name,manager_name,employee_name as hierarchy from Drillone 
-where manager_name is null
-union all
-Select h.employee_name,h.manager_name,
-concat(d.manager_name,'>',h.employee_name) as hierarchy
-from Drillone d
-inner join
-hier h on h.manager_name = d.employee_name
+    SELECT
+        d.employee_name,
+        d.manager_name,
+        d.employee_name::TEXT AS hierarchy
+    FROM Drillone d
+    WHERE d.manager_name IS NULL
+    UNION ALL
+    SELECT
+        d.employee_name,
+        d.manager_name,
+        CONCAT(h.hierarchy, ' > ', d.employee_name)
+    FROM Drillone d
+    INNER JOIN hier h
+        ON d.manager_name = h.employee_name
 )
-Select * from hier;
+SELECT *
+FROM hier;
 
+-- Creating direct queries columns ..
+Select manager_name,count(employee_name) as direct_reports from Drillone group by manager_name;
 
-With recursive my_cte as 
-(
-Select employee_name,manager_name,employee_name as hierarchy from Drillone 
-union all
-Select employee_name,manager_name from Drillone 
-inner join
-my_cte m on m.employee_name=d.manager_name 
-)
+-- Combination of first two queries 
+With recursive cte as (
+Select d.employee_name,d.manager_name,d.employee_name as hierarchy from Drillone d 
+union all 
+Select c.employee_name,c.manager_name from Drillone d 
+inner join 
+cte c on c.manager_name = d.manager_name) 

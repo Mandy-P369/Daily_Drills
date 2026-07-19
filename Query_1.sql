@@ -1,4 +1,6 @@
 
+
+
 create table Drillone(Employee_name varchar(30),Manager_name varchar(30));
 Select column_name,data_type from information_schema.columns where table_name='Drillone';
 Select * from Drillone;
@@ -37,12 +39,13 @@ WITH RECURSIVE hier AS
         employee_name::TEXT AS hierarchy
     FROM Drillone
     WHERE manager_name IS NULL
- 
+
     UNION ALL
+
     SELECT
         d.employee_name,
         d.manager_name,
-        CONCAT(h.hierarchy, ' > ', d.employee_name)
+        CONCAT(h.hierarchy, '>', d.employee_name) AS hierarchy
     FROM Drillone d
     INNER JOIN hier h
         ON d.manager_name = h.employee_name
@@ -57,12 +60,18 @@ direct AS
     WHERE manager_name IS NOT NULL
     GROUP BY manager_name
 )
-
+hier_direct as (
 SELECT
     h.employee_name,
-    h.manager_name,
+    h.manager_name, 
     h.hierarchy,
     COALESCE(d.direct_reports, 0) AS direct_reports
-FROM hier h
+FROM hier h 
 LEFT JOIN direct d
-    ON h.employee_name = d.manager_name;
+    ON h.employee_name = d.manager_name
+ORDER BY h.hierarchy
+) 
+
+Select * from hier_direct m 
+left join 
+hier_direct e on e.hierarchy like concat(m.hierarchy,'> %'); 
